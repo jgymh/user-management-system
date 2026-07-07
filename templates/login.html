@@ -1,29 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}NEXUS · 身份验证{% endblock %}
+{% block title %}用户管理系统 - 登录{% endblock %}
 
 {% block content %}
-    <!-- 系统调试信息 - 测试账号请联系管理员获取 -->
+    <!-- 调试信息 - 默认管理员账号 用户名: admin 密码: admin123 -->
     <div class="card login-card">
-        <div class="corner-bot-left"></div>
-        <h2 class="card-title">身份验证</h2>
+        <h2 class="card-title">用户登录</h2>
         {% if error %}
             <div class="alert alert-error">{{ error }}</div>
         {% endif %}
         <form method="POST" action="/login" class="form">
-            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
             <div class="form-group">
                 <label for="username">用户名</label>
-                <input type="text" id="username" name="username" class="form-input" placeholder="输入用户凭证..." required autocomplete="off">
+                <input type="text" id="username" name="username" class="form-input" placeholder="请输入用户名" required>
             </div>
             <div class="form-group">
                 <label for="password">密码</label>
-                <input type="password" id="password" name="password" class="form-input" placeholder="输入安全密钥..." required>
+                <input type="password" id="password" name="password" class="form-input" placeholder="请输入密码" required>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">◈ 验证身份</button>
+            <button type="submit" class="btn btn-primary btn-block">登 录</button>
         </form>
-        <div class="terminal-line">
-            <span class="blink">▌</span> SYSTEM READY <span class="blink">▌</span>
-        </div>
     </div>
 {% endblock %}

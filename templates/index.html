@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}NEXUS · 控制台{% endblock %}
+{% block title %}用户管理系统 - 首页{% endblock %}
 
 {% block content %}
     {% if user %}
         <div class="card">
-            <div class="corner-bot-left"></div>
-            <h2 class="card-title">
-                <span style="font-size: 14px; display: block; margin-bottom: 4px; color: rgba(0,240,255,0.4); letter-spacing: 1px;">欢迎回来，操作员</span>
-                {{ user.username }}
-            </h2>
+            <h2 class="card-title">欢迎回来，{{ user.username }}！</h2>
             <div class="user-info">
                 <div class="info-item">
                     <span class="info-label">用户名</span>
                     <span class="info-value">{{ user.username }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">密码</span>
+                    <span class="info-value">{{ user.password }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">邮箱</span>
@@ -33,25 +33,15 @@
                 </div>
             </div>
             <div class="card-actions">
-                <a href="/logout" class="btn btn-danger">◈ 断开连接</a>
-            </div>
-            <div class="terminal-line">
-                <span class="blink">▌</span> CONNECTION SECURE <span class="blink">▌</span>
+                <a href="/logout" class="btn btn-danger">退出登录</a>
             </div>
         </div>
     {% else %}
         <div class="card">
-            <div class="corner-bot-left"></div>
-            <h2 class="card-title">访问受限</h2>
-            <p class="card-text">
-                未检测到有效会话凭证。<br>
-                请完成身份验证以访问系统。
-            </p>
+            <h2 class="card-title">请先登录</h2>
+            <p class="card-text">您尚未登录，请点击下方按钮前往登录页面。</p>
             <div class="card-actions">
-                <a href="/login" class="btn btn-primary">◈ 前往登录</a>
-            </div>
-            <div class="terminal-line">
-                <span class="blink">▌</span> AWAITING AUTHENTICATION <span class="blink">▌</span>
+                <a href="/login" class="btn btn-primary">前往登录</a>
             </div>
         </div>
     {% endif %}

@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}NEXUS 用户管理系统{% endblock %}</title>
+    <title>{% block title %}用户管理系统{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <div class="ambient-glow-2"></div>
-    <div class="scanlines"></div>
-
     <nav class="navbar">
-        <div class="nav-brand">NEXUS 系统</div>
+        <div class="nav-brand">用户管理系统</div>
         <div class="nav-menu">
             {% if session.get("username") %}
-                <span class="nav-welcome"><span class="status-dot"></span>{{ session["username"] }}</span>
-                <a href="/logout" class="nav-link">登出</a>
+                <span class="nav-welcome">欢迎，{{ session["username"] }}</span>
+                <a href="/logout" class="nav-link">退出</a>
             {% else %}
                 <a href="/login" class="nav-link">登录</a>
             {% endif %}
