@@ -5,6 +5,7 @@ import logging
 import json
 import os
 import time
+import sqlite3
 from datetime import datetime, timedelta
 from collections import defaultdict
 from flask import Flask, render_template, request, redirect, session
@@ -108,6 +109,23 @@ def _init_users():
 USERS = _init_users()
 
 
+# ===== SQLite 数据库初始化 =====
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "users.db")
+
+def init_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, email TEXT, phone TEXT)")
+    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone) VALUES ('admin', 'admin123', 'admin@example.com', '13800138000')")
+    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone) VALUES ('alice', 'alice2025', 'alice@example.com', '13900139001')")
+    conn.commit()
+    conn.close()
+    print("✅ SQLite 数据库初始化完成")
+
+init_db()
+
+
 # ===== CSRF Token =====
 @app.before_request
 def ensure_csrf_token():
@@ -156,12 +174,30 @@ _load_attempts()
 @app.route("/")
 def index():
     username = session.get("username")
+    user_info = None
     if username and username in USERS:
         user_info = USERS[username]
         safe_info = {k: v for k, v in user_info.items() if k not in ("password",)}
     else:
         safe_info = None
-    return render_template("index.html", user=safe_info)
+
+    # 搜索功能
+    keyword = request.args.get("keyword", "")
+    search_results = []
+    if keyword:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        sql = "SELECT id, username, email, phone FROM users WHERE username LIKE ? OR email LIKE ?"
+        print(f"\n[SQL] 执行查询: {sql} 参数: ['%{keyword}%']")
+        try:
+            c.execute(sql, ('%' + keyword + '%', '%' + keyword + '%'))
+            search_results = c.fetchall()
+            print(f"[SQL] 返回 {len(search_results)} 条结果")
+        except Exception as e:
+            print(f"[SQL] 查询错误: {e}")
+        conn.close()
+
+    return render_template("index.html", user=safe_info, keyword=keyword, search_results=search_results)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -243,6 +279,60 @@ def logout():
     logging.info(f"登出 - 用户: {username}, IP: {ip}")
     session.clear()
     return redirect("/")
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        email = request.form.get("email", "")
+        phone = request.form.get("phone", "")
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        sql = "INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)"
+        print(f"\n[SQL] 执行插入: {sql} 参数: [{username}, {password}, {email}, {phone}]")
+        try:
+            c.execute(sql, (username, password, email, phone))
+            conn.commit()
+            print(f"[SQL] 用户 '{username}' 注册成功")
+            conn.close()
+            return redirect("/login?msg=注册成功，请登录")
+        except Exception as e:
+            print(f"[SQL] 插入错误: {e}")
+            conn.close()
+            return render_template("register.html", error=f"注册失败: 用户名可能已存在")
+
+    return render_template("register.html")
+
+
+@app.route("/search")
+def search():
+    keyword = request.args.get("keyword", "")
+    search_results = []
+    if keyword:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        sql = "SELECT id, username, email, phone FROM users WHERE username LIKE ? OR email LIKE ?"
+        print(f"\n[SQL] 执行查询: {sql} 参数: ['%{keyword}%']")
+        try:
+            c.execute(sql, ('%' + keyword + '%', '%' + keyword + '%'))
+            search_results = c.fetchall()
+            print(f"[SQL] 返回 {len(search_results)} 条结果")
+        except Exception as e:
+            print(f"[SQL] 查询错误: {e}")
+        conn.close()
+
+    username = session.get("username")
+    user_info = None
+    if username and username in USERS:
+        user_info = USERS[username]
+        safe_info = {k: v for k, v in user_info.items() if k not in ("password",)}
+    else:
+        safe_info = None
+
+    return render_template("index.html", user=safe_info, keyword=keyword, search_results=search_results)
 
 
 if __name__ == "__main__":
