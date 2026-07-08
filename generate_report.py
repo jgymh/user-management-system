@@ -116,9 +116,9 @@ run.font.color.rgb = RGBColor(0x4A, 0x6F, 0xA5)
 doc.add_paragraph()
 
 meta_items = [
-    ('报告编号', 'NEXUS-SEC-2025-001'),
+    ('报告编号', 'NEXUS-SEC-2026-001'),
     ('版本', 'v1.0'),
-    ('审计日期', '2025-07-07'),
+    ('审计日期', '2026-07-08'),
     ('项目名称', 'NEXUS 用户管理系统 (Flask)'),
     ('项目所有者', 'jgymh'),
     ('仓库地址', 'https://github.com/jgymh/user-management-system'),
