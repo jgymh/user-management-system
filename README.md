@@ -241,6 +241,6 @@ MIT License
 
 ---
 
-> **报告编号**: NEXUS-SEC-2025-001  
-> **最后更新**: 2025-07-07  
+> **报告编号**: NEXUS-SEC-2026-001  
+> **最后更新**: 2026-07-08  
 > **仓库地址**: [https://github.com/jgymh/user-management-system](https://github.com/jgymh/user-management-system)
