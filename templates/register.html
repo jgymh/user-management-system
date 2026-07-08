@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}NEXUS · 注册{% endblock %}
+
+{% block content %}
+    <div class="card login-card">
+        <div class="corner-bot-left"></div>
+        <h2 class="card-title">创建账户</h2>
+        {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        <form method="POST" action="/register" class="form">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" class="form-input" placeholder="设置用户名..." required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" class="form-input" placeholder="设置密码..." required>
+            </div>
+            <div class="form-group">
+                <label for="email">邮箱</label>
+                <input type="email" id="email" name="email" class="form-input" placeholder="输入邮箱..." required>
+            </div>
+            <div class="form-group">
+                <label for="phone">手机号</label>
+                <input type="text" id="phone" name="phone" class="form-input" placeholder="输入手机号..." required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">◈ 注册</button>
+        </form>
+        <div class="terminal-line">
+            <span class="blink">▌</span> REGISTER NEW USER <span class="blink">▌</span>
+        </div>
+    </div>
+{% endblock %}

@@ -17,6 +17,7 @@
                 <span class="nav-welcome"><span class="status-dot"></span>{{ session["username"] }}</span>
                 <a href="/logout" class="nav-link">登出</a>
             {% else %}
+                <a href="/register" class="nav-link">注册</a>
                 <a href="/login" class="nav-link">登录</a>
             {% endif %}
         </div>

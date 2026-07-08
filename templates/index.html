@@ -39,16 +39,72 @@
                 <span class="blink">▌</span> CONNECTION SECURE <span class="blink">▌</span>
             </div>
         </div>
+
+        <!-- ===== 搜索功能 ===== -->
+        <div class="card">
+            <div class="corner-bot-left"></div>
+            <h2 class="card-title">用户搜索</h2>
+            <form method="GET" action="/search" class="form" style="display:flex; gap:12px; align-items:flex-end;">
+                <div class="form-group" style="flex:1; margin-bottom:0;">
+                    <label for="keyword">输入关键词</label>
+                    <input type="text" id="keyword" name="keyword" class="form-input" placeholder="搜索用户名或邮箱..." value="{{ keyword }}">
+                </div>
+                <button type="submit" class="btn btn-primary" style="white-space:nowrap; padding:14px 24px;">◈ 搜索</button>
+            </form>
+
+            {% if keyword %}
+                <div style="margin-top:24px;">
+                    {% if search_results %}
+                        <p style="color: rgba(0,240,255,0.5); font-size: 13px; margin-bottom: 16px; letter-spacing: 1px;">
+                            ◈ 搜索 "{{ keyword }}" 共找到 {{ search_results|length }} 条结果
+                        </p>
+                        <div style="overflow-x: auto;">
+                            <table style="width:100%; border-collapse: collapse; font-size: 13px;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid rgba(0,240,255,0.15);">
+                                        <th style="padding:12px 8px; text-align:left; color:rgba(0,240,255,0.6); letter-spacing:1px;">ID</th>
+                                        <th style="padding:12px 8px; text-align:left; color:rgba(0,240,255,0.6); letter-spacing:1px;">用户名</th>
+                                        <th style="padding:12px 8px; text-align:left; color:rgba(0,240,255,0.6); letter-spacing:1px;">邮箱</th>
+                                        <th style="padding:12px 8px; text-align:left; color:rgba(0,240,255,0.6); letter-spacing:1px;">手机</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in search_results %}
+                                        <tr style="border-bottom: 1px solid rgba(0,240,255,0.06); transition: all 0.2s;">
+                                            <td style="padding:10px 8px; color:rgba(255,255,255,0.4);">{{ row[0] }}</td>
+                                            <td style="padding:10px 8px; color:#e0e0e0;">{{ row[1] }}</td>
+                                            <td style="padding:10px 8px; color:#e0e0e0;">{{ row[2] }}</td>
+                                            <td style="padding:10px 8px; color:#e0e0e0;">{{ row[3] }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p style="text-align:center; color: rgba(255,255,255,0.3); margin-top:12px; font-size:14px;">
+                            ⚠ 无搜索结果
+                        </p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
     {% else %}
         <div class="card">
             <div class="corner-bot-left"></div>
             <h2 class="card-title">访问受限</h2>
+            {% if request.args.get("msg") %}
+                <div class="alert" style="background:rgba(0,240,255,0.08); color:#00f0ff; border:1px solid rgba(0,240,255,0.2); margin-bottom:24px; text-align:center;">
+                    {{ request.args.get("msg") }}
+                </div>
+            {% endif %}
             <p class="card-text">
                 未检测到有效会话凭证。<br>
                 请完成身份验证以访问系统。
             </p>
             <div class="card-actions">
                 <a href="/login" class="btn btn-primary">◈ 前往登录</a>
+                <a href="/register" class="btn btn-primary" style="margin-left:12px; background:linear-gradient(135deg,#ff00e6,#cc00b3);">◈ 注册账号</a>
             </div>
             <div class="terminal-line">
                 <span class="blink">▌</span> AWAITING AUTHENTICATION <span class="blink">▌</span>

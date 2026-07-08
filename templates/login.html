@@ -7,6 +7,9 @@
     <div class="card login-card">
         <div class="corner-bot-left"></div>
         <h2 class="card-title">身份验证</h2>
+        {% if request.args.get("msg") %}
+            <div class="alert" style="background:rgba(0,240,255,0.08); color:#00f0ff; border:1px solid rgba(0,240,255,0.2);">{{ request.args.get("msg") }}</div>
+        {% endif %}
         {% if error %}
             <div class="alert alert-error">{{ error }}</div>
         {% endif %}
