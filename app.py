@@ -6,6 +6,8 @@ import json
 import os
 import time
 import sqlite3
+import re
+import imghdr
 from datetime import datetime, timedelta
 from collections import defaultdict
 from flask import Flask, render_template, request, redirect, session, url_for
@@ -336,6 +338,29 @@ def search():
     return render_template("index.html", user=safe_info, keyword=keyword, search_results=search_results)
 
 
+# ===== 允许上传的文件类型 =====
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "bmp", "webp"}
+
+
+def safe_filename(filename):
+    """清理文件名，防止路径穿越"""
+    # 去掉路径部分，只保留文件名
+    filename = os.path.basename(filename)
+    # 去掉非安全字符
+    filename = re.sub(r'[^\w\.\-]', '_', filename)
+    # 限制文件名长度
+    if len(filename) > 100:
+        name, ext = os.path.splitext(filename)
+        filename = name[:80] + ext
+    return filename
+
+
+def allowed_file(filename):
+    """检查文件扩展名是否允许"""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    return ext in ALLOWED_EXTENSIONS
+
+
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
     # 需要登录才能访问
@@ -353,12 +378,29 @@ def upload():
             if f.filename == "":
                 error = "文件名为空"
             else:
-                # 使用用户上传的原始文件名，不重命名
-                filename = f.filename
-                save_path = os.path.join("static/uploads", filename)
-                f.save(save_path)
-                file_url = url_for("static", filename=f"uploads/{filename}")
-                print(f"[UPLOAD] 文件已保存: {save_path}")
+                # 修复1: 检查文件扩展名
+                if not allowed_file(f.filename):
+                    error = "不支持的文件类型，仅允许图片: png/jpg/gif/bmp/webp"
+                else:
+                    # 修复2: 清理文件名（防路径穿越）
+                    filename = safe_filename(f.filename)
+
+                    # 修复3: 如果文件已存在，自动重命名
+                    save_path = os.path.join("static/uploads", filename)
+                    if os.path.exists(save_path):
+                        name, ext = os.path.splitext(filename)
+                        filename = f"{name}_{secrets.token_hex(4)}{ext}"
+                        save_path = os.path.join("static/uploads", filename)
+
+                    # 修复4: 读取文件内容验证
+                    file_data = f.read()
+                    if len(file_data) > 16 * 1024 * 1024:
+                        error = "文件大小超过 16MB 限制"
+                    else:
+                        f.seek(0)
+                        f.save(save_path)
+                        file_url = url_for("static", filename=f"uploads/{filename}")
+                        print(f"[UPLOAD] 文件已保存: {save_path} (用户: {session.get('username')})")
 
     return render_template("upload.html", file_url=file_url, error=error)
 
