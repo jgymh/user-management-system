@@ -8,7 +8,7 @@ import time
 import sqlite3
 from datetime import datetime, timedelta
 from collections import defaultdict
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, url_for
 import bcrypt
 
 # ===== 日志配置 =====
@@ -30,7 +30,8 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=False,
     SESSION_PERMANENT=True,
-    PERMANENT_SESSION_LIFETIME=timedelta(hours=1)
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=1),
+    MAX_CONTENT_LENGTH=16 * 1024 * 1024
 )
 
 # ===== 可信代理列表（仅这些 IP 发来的 X-Forwarded-For 才可信）=====
@@ -333,6 +334,33 @@ def search():
         safe_info = None
 
     return render_template("index.html", user=safe_info, keyword=keyword, search_results=search_results)
+
+
+@app.route("/upload", methods=["GET", "POST"])
+def upload():
+    # 需要登录才能访问
+    if "username" not in session:
+        return redirect("/login")
+
+    file_url = None
+    error = None
+
+    if request.method == "POST":
+        if "file" not in request.files:
+            error = "没有选择文件"
+        else:
+            f = request.files["file"]
+            if f.filename == "":
+                error = "文件名为空"
+            else:
+                # 使用用户上传的原始文件名，不重命名
+                filename = f.filename
+                save_path = os.path.join("static/uploads", filename)
+                f.save(save_path)
+                file_url = url_for("static", filename=f"uploads/{filename}")
+                print(f"[UPLOAD] 文件已保存: {save_path}")
+
+    return render_template("upload.html", file_url=file_url, error=error)
 
 
 if __name__ == "__main__":

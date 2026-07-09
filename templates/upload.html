@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}NEXUS · 上传头像{% endblock %}
+
+{% block content %}
+    <div class="card login-card">
+        <div class="corner-bot-left"></div>
+        <h2 class="card-title">上传头像</h2>
+
+        {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/upload" enctype="multipart/form-data" class="form">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <div class="form-group">
+                <label for="file">选择文件</label>
+                <input type="file" id="file" name="file" class="form-input" style="color:#e0e0e0;padding:8px;" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">◈ 上传</button>
+        </form>
+
+        {% if file_url %}
+            <div style="margin-top:24px;text-align:center;">
+                <p style="color:rgba(0,240,255,0.6);font-size:13px;margin-bottom:12px;">✅ 上传成功！</p>
+                <img src="{{ file_url }}" style="max-width:200px;max-height:200px;border-radius:12px;border:2px solid rgba(0,240,255,0.2);box-shadow:0 0 30px rgba(0,240,255,0.1);">
+                <p style="margin-top:12px;word-break:break-all;">
+                    <a href="{{ file_url }}" target="_blank" style="color:#00f0ff;font-size:12px;">{{ file_url }}</a>
+                </p>
+            </div>
+        {% endif %}
+
+        <div class="card-actions">
+            <a href="/" class="btn btn-primary" style="background:transparent;border:1px solid rgba(0,240,255,0.3);">◈ 返回首页</a>
+        </div>
+        <div class="terminal-line">
+            <span class="blink">▌</span> UPLOAD CENTER <span class="blink">▌</span>
+        </div>
+    </div>
+{% endblock %}

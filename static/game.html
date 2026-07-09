@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>猜数字 - 小游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; color: #fff;
+        }
+        .game {
+            background: #16213e;
+            padding: 40px; border-radius: 16px;
+            text-align: center; max-width: 400px;
+            box-shadow: 0 0 30px rgba(0,200,255,0.1);
+        }
+        h1 { font-size: 28px; margin-bottom: 8px; color: #00d4ff; }
+        .sub { color: #888; font-size: 14px; margin-bottom: 24px; }
+        input {
+            padding: 12px 16px; font-size: 18px; width: 120px;
+            border: 2px solid #333; border-radius: 8px;
+            background: #0f3460; color: #fff; text-align: center;
+            outline: none; transition: 0.2s;
+        }
+        input:focus { border-color: #00d4ff; }
+        button {
+            padding: 12px 28px; font-size: 16px; margin-left: 8px;
+            border: none; border-radius: 8px; cursor: pointer;
+            background: #00d4ff; color: #1a1a2e; font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { background: #00b8e6; transform: scale(1.02); }
+        .msg { margin-top: 20px; padding: 12px; border-radius: 8px; font-size: 18px; min-height: 48px; }
+        .hint { color: #ffd700; }
+        .win { color: #00ff88; }
+        .lose { color: #ff4444; }
+        .info { margin-top: 16px; color: #666; font-size: 13px; }
+        .reset { margin-top: 12px; background: #e94560; color: #fff; display: none; }
+        .reset:hover { background: #cc0033; }
+        .count { color: #ffd700; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <h1>🎯 猜数字</h1>
+        <p class="sub">猜一个 1-100 之间的数字</p>
+        <div>
+            <input type="number" id="guess" min="1" max="100" placeholder="?">
+            <button onclick="check()">猜</button>
+        </div>
+        <div class="msg" id="msg">输入数字，点"猜"开始</div>
+        <div class="info">已猜 <span class="count" id="count">0</span> 次</div>
+        <button class="reset" id="resetBtn" onclick="resetGame()">🔄 重新开始</button>
+    </div>
+
+    <script>
+        let num = Math.floor(Math.random() * 100) + 1;
+        let tries = 0;
+
+        function check() {
+            let input = document.getElementById('guess');
+            let msg = document.getElementById('msg');
+            let count = document.getElementById('count');
+            let resetBtn = document.getElementById('resetBtn');
+            let guess = parseInt(input.value);
+
+            if (!guess || guess < 1 || guess > 100) {
+                msg.className = 'msg lose';
+                msg.innerText = '请输入 1-100 的数字！';
+                return;
+            }
+
+            tries++;
+            count.innerText = tries;
+
+            if (guess === num) {
+                msg.className = 'msg win';
+                msg.innerText = '🎉 恭喜你猜对了！就是 ' + num + '！用了 ' + tries + ' 次';
+                resetBtn.style.display = 'inline-block';
+                document.querySelector('button').disabled = true;
+            } else if (tries >= 7) {
+                msg.className = 'msg lose';
+                msg.innerText = '💀 7次机会用完了！答案是 ' + num;
+                resetBtn.style.display = 'inline-block';
+                document.querySelector('button').disabled = true;
+            } else if (guess < num) {
+                msg.className = 'msg hint';
+                msg.innerText = '⬆️ 小了，再大一点！（还剩 ' + (7 - tries) + ' 次）';
+            } else {
+                msg.className = 'msg hint';
+                msg.innerText = '⬇️ 大了，再小一点！（还剩 ' + (7 - tries) + ' 次）';
+            }
+            input.value = '';
+            input.focus();
+        }
+
+        function resetGame() {
+            num = Math.floor(Math.random() * 100) + 1;
+            tries = 0;
+            document.getElementById('count').innerText = '0';
+            document.getElementById('msg').className = 'msg';
+            document.getElementById('msg').innerText = '新的一局！输入数字开始';
+            document.getElementById('resetBtn').style.display = 'none';
+            document.querySelector('button').disabled = false;
+            document.getElementById('guess').value = '';
+            document.getElementById('guess').focus();
+        }
+
+        document.getElementById('guess').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') check();
+        });
+    </script>
+</body>
+</html>
