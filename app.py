@@ -7,7 +7,6 @@ import os
 import time
 import sqlite3
 import re
-import imghdr
 from datetime import datetime, timedelta
 from collections import defaultdict
 from flask import Flask, render_template, request, redirect, session, url_for
