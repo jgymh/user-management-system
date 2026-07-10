@@ -16,7 +16,7 @@
             {% if session.get("username") %}
                 <span class="nav-welcome"><span class="status-dot"></span>{{ session["username"] }}</span>
                 <a href="/upload" class="nav-link">上传头像</a>
-                <a href="/profile?user_id=1" class="nav-link">个人中心</a>
+                <a href="/profile" class="nav-link">个人中心</a>
                 <a href="/logout" class="nav-link">登出</a>
             {% else %}
                 <a href="/register" class="nav-link">注册</a>

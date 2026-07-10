@@ -411,39 +411,67 @@ def upload():
 
 @app.route("/profile")
 def profile():
-    user_id = request.args.get("user_id", "")
-    user_data = None
-    if user_id:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT id, username, email, phone, balance FROM users WHERE id=?", (user_id,))
-        row = c.fetchone()
-        if row:
-            user_data = {
-                "id": row[0],
-                "username": row[1],
-                "email": row[2],
-                "phone": row[3],
-                "balance": row[4]
-            }
-        conn.close()
+    # 需要登录才能访问
+    if "username" not in session:
+        return redirect("/login")
+
+    username = session.get("username")
+    user_data = _get_user_data(username)
     return render_template("profile.html", user=user_data)
 
 
 @app.route("/recharge", methods=["POST"])
 def recharge():
-    user_id = request.form.get("user_id", "")
+    # 需要登录才能访问
+    if "username" not in session:
+        return redirect("/login")
+
+    # CSRF 校验
+    csrf_token = request.form.get("csrf_token")
+    if csrf_token != session.get("csrf_token"):
+        return "CSRF token 无效", 400
+
+    username = session.get("username")
     amount = request.form.get("amount", "0")
     try:
         amount_num = int(amount)
+        # 校验金额必须为正数
+        if amount_num <= 0:
+            # 重新查询用户信息再返回页面
+            user_data = _get_user_data(username)
+            return render_template("profile.html", user=user_data, error="充值金额必须大于0")
+
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("UPDATE users SET balance = COALESCE(balance, 0) + ? WHERE id=?", (amount_num, user_id))
+        # 只充值当前登录用户
+        c.execute("UPDATE users SET balance = COALESCE(balance, 0) + ? WHERE username=?", (amount_num, username))
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"[RECHARGE] 错误: {e}")
-    return redirect(f"/profile?user_id={user_id}")
+        user_data = _get_user_data(username)
+        return render_template("profile.html", user=user_data, error="充值失败")
+    return redirect("/profile")
+
+
+def _get_user_data(username):
+    """辅助函数：根据用户名查询用户资料"""
+    if not username:
+        return None
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, username, email, phone, balance FROM users WHERE username=?", (username,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return {
+            "id": row[0],
+            "username": row[1],
+            "email": row[2],
+            "phone": row[3],
+            "balance": row[4]
+        }
+    return None
 
 
 if __name__ == "__main__":
