@@ -118,9 +118,14 @@ def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, email TEXT, phone TEXT)")
-    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone) VALUES ('admin', 'admin123', 'admin@example.com', '13800138000')")
-    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone) VALUES ('alice', 'alice2025', 'alice@example.com', '13900139001')")
+    c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, email TEXT, phone TEXT, balance INTEGER DEFAULT 0)")
+    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone, balance) VALUES ('admin', 'admin123', 'admin@example.com', '13800138000', 99999)")
+    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone, balance) VALUES ('alice', 'alice2025', 'alice@example.com', '13900139001', 100)")
+    # 为已存在的表添加balance列（如果不存在）
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN balance INTEGER DEFAULT 0")
+    except:
+        pass
     conn.commit()
     conn.close()
     print("✅ SQLite 数据库初始化完成")
@@ -402,6 +407,43 @@ def upload():
                         print(f"[UPLOAD] 文件已保存: {save_path} (用户: {session.get('username')})")
 
     return render_template("upload.html", file_url=file_url, error=error)
+
+
+@app.route("/profile")
+def profile():
+    user_id = request.args.get("user_id", "")
+    user_data = None
+    if user_id:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT id, username, email, phone, balance FROM users WHERE id=?", (user_id,))
+        row = c.fetchone()
+        if row:
+            user_data = {
+                "id": row[0],
+                "username": row[1],
+                "email": row[2],
+                "phone": row[3],
+                "balance": row[4]
+            }
+        conn.close()
+    return render_template("profile.html", user=user_data)
+
+
+@app.route("/recharge", methods=["POST"])
+def recharge():
+    user_id = request.form.get("user_id", "")
+    amount = request.form.get("amount", "0")
+    try:
+        amount_num = int(amount)
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("UPDATE users SET balance = COALESCE(balance, 0) + ? WHERE id=?", (amount_num, user_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[RECHARGE] 错误: {e}")
+    return redirect(f"/profile?user_id={user_id}")
 
 
 if __name__ == "__main__":
