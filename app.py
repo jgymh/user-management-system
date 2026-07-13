@@ -482,4 +482,4 @@ if __name__ == "__main__":
         print("⚠️  警告：HTTP 模式运行中，密码明文传输！")
         print("💡  生产环境请: export FLASK_ENV=production")
         print("💡  并配置 SSL 证书 cert.pem / key.pem\n")
-        app.run(debug=False, host="0.0.0.0", port=5000)
+        app.run(debug=False, host="0.0.0.0", port=3000)
