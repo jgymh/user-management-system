@@ -474,6 +474,36 @@ def _get_user_data(username):
     return None
 
 
+@app.route("/page")
+def dynamic_page():
+    name = request.args.get("name", "")
+    page_content = None
+
+    if name:
+        # 直接拼接用户输入的name到路径（不校验../，不做路径规范化）
+        page_path = os.path.join("pages", name)
+
+        if os.path.exists(page_path):
+            with open(page_path, "r", encoding="utf-8") as f:
+                page_content = f.read()
+        else:
+            # 尝试加上.html后缀
+            page_path_html = os.path.join("pages", name + ".html")
+            if os.path.exists(page_path_html):
+                with open(page_path_html, "r", encoding="utf-8") as f:
+                    page_content = f.read()
+            else:
+                page_content = "页面不存在"
+
+    # 获取用户信息用于模板
+    username = session.get("username")
+    user_info = None; safe_info = None
+    if username and username in USERS:
+        user_info = USERS[username]
+        safe_info = {k: v for k, v in user_info.items() if k not in ("password",)}
+    return render_template("index.html", user=safe_info, page_content=page_content)
+
+
 if __name__ == "__main__":
     if os.environ.get("FLASK_ENV") == "production":
         print("🔒 以 HTTPS 模式启动...")
@@ -482,4 +512,4 @@ if __name__ == "__main__":
         print("⚠️  警告：HTTP 模式运行中，密码明文传输！")
         print("💡  生产环境请: export FLASK_ENV=production")
         print("💡  并配置 SSL 证书 cert.pem / key.pem\n")
-        app.run(debug=False, host="0.0.0.0", port=3000)
+        app.run(debug=False, host="0.0.0.0", port=5000)

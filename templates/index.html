@@ -89,8 +89,10 @@
                     {% endif %}
                 </div>
             {% endif %}
+            <div class="card-actions" style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(0,240,255,0.08);">
+                <a href="/page?name=help" class="btn btn-primary" style="background:transparent;border:1px solid rgba(0,240,255,0.3);font-size:13px;">📖 帮助中心</a>
+            </div>
         </div>
-
     {% else %}
         <div class="card">
             <div class="corner-bot-left"></div>
@@ -112,5 +114,18 @@
                 <span class="blink">▌</span> AWAITING AUTHENTICATION <span class="blink">▌</span>
             </div>
         </div>
+    {% endif %}
+
+    <!-- ===== 动态页面加载区域（不依赖登录状态） ===== -->
+    {% if page_content %}
+    <div class="card">
+        <div class="corner-bot-left"></div>
+        <div style="max-height:500px; overflow-y:auto; padding:8px 0;">
+            {{ page_content|safe }}
+        </div>
+        <div class="card-actions" style="margin-top:16px;">
+            <a href="/" class="btn btn-primary" style="background:transparent;border:1px solid rgba(0,240,255,0.3);">◈ 关闭</a>
+        </div>
+    </div>
     {% endif %}
 {% endblock %}
