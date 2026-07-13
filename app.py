@@ -480,7 +480,9 @@ def dynamic_page():
     page_content = None
 
     if name:
-        # 直接拼接用户输入的name到路径（不校验../，不做路径规范化）
+        # 修复: 使用basename去掉路径部分，防止路径穿越
+        name = os.path.basename(name)
+
         page_path = os.path.join("pages", name)
 
         if os.path.exists(page_path):
