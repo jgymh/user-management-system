@@ -50,6 +50,26 @@
             </div>
         </div>
 
+        <div class="card">
+            <div class="corner-bot-left"></div>
+            <h2 class="card-title">修改密码</h2>
+            <form method="POST" action="/change-password" class="form">
+                <input type="hidden" name="username" value="{{ user.username }}">
+                <div class="form-group">
+                    <label for="new_password">新密码</label>
+                    <input type="password" id="new_password" name="new_password" class="form-input" placeholder="输入新密码..." required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">确认密码</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-input" placeholder="再次输入新密码..." required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">◈ 修改密码</button>
+            </form>
+            <div class="terminal-line">
+                <span class="blink">▌</span> CHANGE PASSWORD <span class="blink">▌</span>
+            </div>
+        </div>
+
         <div class="card-actions">
             <a href="/" class="btn btn-primary" style="background:transparent;border:1px solid rgba(0,240,255,0.3);">◈ 返回首页</a>
         </div>

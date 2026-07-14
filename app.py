@@ -506,6 +506,21 @@ def dynamic_page():
     return render_template("index.html", user=safe_info, page_content=page_content)
 
 
+@app.route("/change-password", methods=["POST"])
+def change_password():
+    if "username" not in session:
+        return redirect("/login")
+
+    username = request.form.get("username", "")
+    new_password = request.form.get("new_password", "")
+
+    if username and new_password and username in USERS:
+        USERS[username]["password"] = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt(rounds=12))
+        print(f"[PASSWORD] 用户 '{username}' 密码已修改")
+
+    return redirect("/profile")
+
+
 if __name__ == "__main__":
     if os.environ.get("FLASK_ENV") == "production":
         print("🔒 以 HTTPS 模式启动...")
