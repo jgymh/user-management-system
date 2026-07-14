@@ -7,6 +7,7 @@ import os
 import time
 import sqlite3
 import re
+import html
 from datetime import datetime, timedelta
 from collections import defaultdict
 from flask import Flask, render_template, request, redirect, session, url_for
@@ -53,7 +54,7 @@ def add_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
@@ -119,8 +120,8 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, email TEXT, phone TEXT, balance INTEGER DEFAULT 0)")
-    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone, balance) VALUES ('admin', 'admin123', 'admin@example.com', '13800138000', 99999)")
-    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone, balance) VALUES ('alice', 'alice2025', 'alice@example.com', '13900139001', 100)")
+    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone, balance) VALUES ('admin', ?, 'admin@example.com', '13800138000', 99999)", (bcrypt.hashpw(b'admin123', bcrypt.gensalt(rounds=12)).decode(),))
+    c.execute("INSERT OR IGNORE INTO users (username, password, email, phone, balance) VALUES ('alice', ?, 'alice@example.com', '13900139001', 100)", (bcrypt.hashpw(b'alice2025', bcrypt.gensalt(rounds=12)).decode(),))
     # 为已存在的表添加balance列（如果不存在）
     try:
         c.execute("ALTER TABLE users ADD COLUMN balance INTEGER DEFAULT 0")
@@ -291,6 +292,17 @@ def logout():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        ip = get_client_ip()
+        now = datetime.now()
+
+        # 速率限制
+        cutoff = now - timedelta(minutes=LOCKOUT_MINUTES)
+        login_attempts[ip]["__register__"] = [
+            t for t in login_attempts[ip]["__register__"] if t > cutoff
+        ]
+        if len(login_attempts[ip]["__register__"]) >= 3:
+            return render_template("register.html", error="操作过于频繁，请15分钟后再试！")
+
         username = request.form.get("username", "")
         password = request.form.get("password", "")
         email = request.form.get("email", "")
@@ -301,12 +313,15 @@ def register():
         if csrf_token != session.get("csrf_token"):
             return "CSRF token 无效", 400
 
+        # 记录注册尝试
+        login_attempts[ip]["__register__"].append(now)
+
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         sql = "INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)"
         print(f"\n[SQL] 执行插入: {sql} 参数: [{username}, {password}, {email}, {phone}]")
         try:
-            c.execute(sql, (username, password, email, phone))
+            c.execute(sql, (username, bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode(), email, phone))
             conn.commit()
             print(f"[SQL] 用户 '{username}' 注册成功")
             conn.close()
@@ -497,13 +512,30 @@ def dynamic_page():
 
         if os.path.exists(page_path):
             with open(page_path, "r", encoding="utf-8") as f:
-                page_content = f.read()
+                content = f.read()
+                # 基本XSS防护：只允许安全标签
+                safe_tags = ['h1','h2','h3','h4','h5','h6','p','br','ul','ol','li','strong','em','a','div','span','table','tr','td','th','thead','tbody','code','pre','hr','blockquote','img','dl','dt','dd']
+                for tag in ['script','style','iframe','object','embed','form','input','button','textarea','select','option','link','meta','base']:
+                    content = re.sub(rf'<{tag}[^>]*>', '', content, flags=re.IGNORECASE)
+                    content = re.sub(rf'</{tag}>', '', content, flags=re.IGNORECASE)
+                # 移除onclick等事件处理器
+                content = re.sub(r'\son\w+\s*=\s*["\'][^"\']*["\']', '', content, flags=re.IGNORECASE)
+                # 移除javascript:协议链接
+                content = re.sub(r'href\s*=\s*["\']\s*javascript\s*:', 'href="#disabled-', content, flags=re.IGNORECASE)
+                page_content = content
         else:
             # 尝试加上.html后缀
             page_path_html = os.path.join("pages", name + ".html")
             if os.path.exists(page_path_html):
                 with open(page_path_html, "r", encoding="utf-8") as f:
-                    page_content = f.read()
+                    content = f.read()
+                    # 基本XSS防护：移除危险标签和事件处理器
+                    for tag in ['script','style','iframe','object','embed','form','input','button','textarea','select','option','link','meta','base']:
+                        content = re.sub(rf'<{tag}[^>]*>', '', content, flags=re.IGNORECASE)
+                        content = re.sub(rf'</{tag}>', '', content, flags=re.IGNORECASE)
+                    content = re.sub(r'\son\w+\s*=\s*["\'][^"\']*["\']', '', content, flags=re.IGNORECASE)
+                    content = re.sub(r'href\s*=\s*["\']\s*javascript\s*:', 'href="#disabled-', content, flags=re.IGNORECASE)
+                    page_content = content
             else:
                 page_content = "页面不存在"
 
@@ -526,11 +558,18 @@ def change_password():
     if csrf_token != session.get("csrf_token"):
         return "CSRF token 无效", 400
 
-    username = request.form.get("username", "")
+    username = session.get("username")
     new_password = request.form.get("new_password", "")
 
-    if username and new_password and username in USERS:
+    if username and new_password:
         USERS[username]["password"] = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt(rounds=12))
+        # 同步更新SQLite数据库（bcrypt哈希存储）
+        hashed_pw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt(rounds=12)).decode()
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("UPDATE users SET password=? WHERE username=?", (hashed_pw, username))
+        conn.commit()
+        conn.close()
         print(f"[PASSWORD] 用户 '{username}' 密码已修改")
 
     return redirect("/profile")
