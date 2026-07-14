@@ -296,6 +296,11 @@ def register():
         email = request.form.get("email", "")
         phone = request.form.get("phone", "")
 
+        # CSRF 校验
+        csrf_token = request.form.get("csrf_token")
+        if csrf_token != session.get("csrf_token"):
+            return "CSRF token 无效", 400
+
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         sql = "INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)"
@@ -375,6 +380,11 @@ def upload():
     error = None
 
     if request.method == "POST":
+        # CSRF 校验
+        csrf_token = request.form.get("csrf_token")
+        if csrf_token != session.get("csrf_token"):
+            return "CSRF token 无效", 400
+
         if "file" not in request.files:
             error = "没有选择文件"
         else:
@@ -510,6 +520,11 @@ def dynamic_page():
 def change_password():
     if "username" not in session:
         return redirect("/login")
+
+    # CSRF 校验
+    csrf_token = request.form.get("csrf_token")
+    if csrf_token != session.get("csrf_token"):
+        return "CSRF token 无效", 400
 
     username = request.form.get("username", "")
     new_password = request.form.get("new_password", "")
