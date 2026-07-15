@@ -10,6 +10,9 @@ import re
 import html
 import urllib.request
 import urllib.error
+import urllib.parse
+import socket
+import ipaddress
 from datetime import datetime, timedelta
 from collections import defaultdict
 from flask import Flask, render_template, request, redirect, session, url_for
@@ -589,6 +592,31 @@ def fetch_url():
 
     if url:
         try:
+            # 修复1: 只允许 http 和 https 协议
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme not in ("http", "https"):
+                error = "仅支持 http 和 https 协议"
+                return _render_fetch_result(safe_info=None, url=url, status=status_code, content=response_content, error=error)
+
+            # 修复2: 解析主机名并检测内网IP
+            hostname = parsed.hostname
+            if not hostname:
+                error = "无效的 URL"
+                return _render_fetch_result(safe_info=None, url=url, status=status_code, content=response_content, error=error)
+
+            # 修复3: DNS解析并检查IP是否为内网地址
+            try:
+                ip_addrs = socket.getaddrinfo(hostname, None)
+                for addr in ip_addrs:
+                    ip_str = addr[4][0]
+                    ip_obj = ipaddress.ip_address(ip_str)
+                    if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
+                        error = f"禁止访问内网地址: {ip_str}"
+                        return _render_fetch_result(safe_info=None, url=url, status=status_code, content=response_content, error=error)
+            except socket.gaierror:
+                error = f"无法解析域名: {hostname}"
+                return _render_fetch_result(safe_info=None, url=url, status=status_code, content=response_content, error=error)
+
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             resp = urllib.request.urlopen(req, timeout=10)
             status_code = resp.getcode()
@@ -609,6 +637,16 @@ def fetch_url():
         safe_info = {k: v for k, v in user_info.items() if k not in ("password",)}
 
     return render_template("index.html", user=safe_info, fetch_url=url, fetch_status=status_code, fetch_content=response_content, fetch_error=error)
+
+
+def _render_fetch_result(safe_info, url, status, content, error):
+    username = session.get("username")
+    if safe_info is None:
+        safe_info = None
+        if username and username in USERS:
+            user_info = USERS[username]
+            safe_info = {k: v for k, v in user_info.items() if k not in ("password",)}
+    return render_template("index.html", user=safe_info, fetch_url=url, fetch_status=status, fetch_content=content, fetch_error=error)
 
 
 if __name__ == "__main__":
