@@ -8,6 +8,8 @@ import time
 import sqlite3
 import re
 import html
+import urllib.request
+import urllib.error
 from datetime import datetime, timedelta
 from collections import defaultdict
 from flask import Flask, render_template, request, redirect, session, url_for
@@ -573,6 +575,40 @@ def change_password():
         print(f"[PASSWORD] 用户 '{username}' 密码已修改")
 
     return redirect("/profile")
+
+
+@app.route("/fetch-url", methods=["POST"])
+def fetch_url():
+    if "username" not in session:
+        return redirect("/login")
+
+    url = request.form.get("url", "")
+    status_code = None
+    response_content = ""
+    error = None
+
+    if url:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            resp = urllib.request.urlopen(req, timeout=10)
+            status_code = resp.getcode()
+            content = resp.read().decode("utf-8", errors="replace")
+            response_content = content[:5000]
+        except urllib.error.HTTPError as e:
+            status_code = e.getcode()
+            response_content = str(e)
+        except urllib.error.URLError as e:
+            error = f"URL 请求失败: {e.reason}"
+        except Exception as e:
+            error = f"请求出错: {str(e)}"
+
+    username = session.get("username")
+    user_info = None; safe_info = None
+    if username and username in USERS:
+        user_info = USERS[username]
+        safe_info = {k: v for k, v in user_info.items() if k not in ("password",)}
+
+    return render_template("index.html", user=safe_info, fetch_url=url, fetch_status=status_code, fetch_content=response_content, fetch_error=error)
 
 
 if __name__ == "__main__":

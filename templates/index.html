@@ -93,6 +93,35 @@
                 <a href="/page?name=help" class="btn btn-primary" style="background:transparent;border:1px solid rgba(0,240,255,0.3);font-size:13px;">📖 帮助中心</a>
             </div>
         </div>
+
+        <!-- ===== URL 抓取功能 ===== -->
+        <div class="card">
+            <div class="corner-bot-left"></div>
+            <h2 class="card-title">URL 抓取</h2>
+            <form method="POST" action="/fetch-url" class="form" style="display:flex; gap:12px; align-items:flex-end;">
+                <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                <div class="form-group" style="flex:1; margin-bottom:0;">
+                    <label for="url">输入 URL</label>
+                    <input type="text" id="url" name="url" class="form-input" placeholder="http:// 或 https://..." value="{{ fetch_url }}">
+                </div>
+                <button type="submit" class="btn btn-primary" style="white-space:nowrap; padding:14px 24px;">◈ 抓取</button>
+            </form>
+
+            {% if fetch_error %}
+                <div class="alert alert-error" style="margin-top:16px;">{{ fetch_error }}</div>
+            {% endif %}
+
+            {% if fetch_status is not none %}
+                <div style="margin-top:16px;">
+                    <p style="color: rgba(0,240,255,0.6); font-size: 13px; margin-bottom: 8px; letter-spacing: 1px;">
+                        ◈ 状态码: <span style="color:#ffd700;">{{ fetch_status }}</span>
+                    </p>
+                    <div style="background:rgba(0,0,0,0.3); border-radius:6px; padding:16px; max-height:400px; overflow-y:auto; font-size:12px; color:rgba(255,255,255,0.7); font-family:monospace; white-space:pre-wrap; word-break:break-all;">
+                        {{ fetch_content }}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     {% else %}
         <div class="card">
             <div class="corner-bot-left"></div>
