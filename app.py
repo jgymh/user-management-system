@@ -663,10 +663,13 @@ def ping():
     if request.method == "POST":
         ip = request.form.get("ip", "")
         if ip:
+            # 修复：使用参数列表而非shell=True，防止命令注入
+            import shlex
+            safe_ip = shlex.quote(ip)
+            cmd = ["ping", "-c", "3", safe_ip]
+            print(f"[PING] 执行命令: ping -c 3 {safe_ip}")
             try:
-                cmd = f"ping -c 3 {ip}"
-                result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=30).decode("utf-8", errors="replace")
-                print(f"[PING] 命令: {cmd}")
+                result = subprocess.check_output(cmd, timeout=30, stderr=subprocess.STDOUT).decode("utf-8", errors="replace")
             except subprocess.CalledProcessError as e:
                 result = e.output.decode("utf-8", errors="replace")
             except subprocess.TimeoutExpired:
