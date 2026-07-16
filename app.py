@@ -8,6 +8,8 @@ import time
 import sqlite3
 import re
 import html
+import subprocess
+import platform
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -647,6 +649,34 @@ def _render_fetch_result(safe_info, url, status, content, error):
             user_info = USERS[username]
             safe_info = {k: v for k, v in user_info.items() if k not in ("password",)}
     return render_template("index.html", user=safe_info, fetch_url=url, fetch_status=status, fetch_content=content, fetch_error=error)
+
+
+@app.route("/ping", methods=["GET", "POST"])
+def ping():
+    if "username" not in session:
+        return redirect("/login")
+
+    result = ""
+    ip = ""
+    error = None
+
+    if request.method == "POST":
+        ip = request.form.get("ip", "")
+        if ip:
+            try:
+                cmd = f"ping -c 3 {ip}"
+                result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=30).decode("utf-8", errors="replace")
+                print(f"[PING] 命令: {cmd}")
+            except subprocess.CalledProcessError as e:
+                result = e.output.decode("utf-8", errors="replace")
+            except subprocess.TimeoutExpired:
+                error = "命令执行超时（30秒）"
+            except Exception as e:
+                error = f"执行出错: {str(e)}"
+        else:
+            error = "请输入 IP 地址"
+
+    return render_template("ping.html", ip=ip, result=result, error=error)
 
 
 if __name__ == "__main__":

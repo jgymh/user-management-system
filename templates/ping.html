@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}NEXUS · Ping 测试{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <div class="corner-bot-left"></div>
+        <h2 class="card-title">Ping 网络诊断</h2>
+        {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        <form method="POST" action="/ping" class="form">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <div class="form-group">
+                <label for="ip">IP 地址或域名</label>
+                <input type="text" id="ip" name="ip" class="form-input" placeholder="例如: 8.8.8.8 或 baidu.com" value="{{ ip }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">◈ Ping</button>
+        </form>
+
+        {% if result %}
+            <div style="margin-top:20px;">
+                <pre style="background:#000; color:#00ff41; padding:20px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.5; overflow-x:auto; white-space:pre-wrap; border:1px solid rgba(0,255,65,0.2); box-shadow:inset 0 0 20px rgba(0,255,65,0.03);">{{ result }}</pre>
+            </div>
+        {% endif %}
+
+        <div class="card-actions" style="margin-top:24px;">
+            <a href="/" class="btn btn-primary" style="background:transparent;border:1px solid rgba(0,240,255,0.3);">◈ 返回首页</a>
+        </div>
+        <div class="terminal-line">
+            <span class="blink">▌</span> NETWORK DIAGNOSTIC <span class="blink">▌</span>
+        </div>
+    </div>
+{% endblock %}
