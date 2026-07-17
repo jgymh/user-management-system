@@ -694,37 +694,25 @@ def xml_import():
         xml_data = request.form.get("xml_data", "")
         if xml_data:
             try:
-                # 检测 XML 中的 <!ENTITY 定义，提取 SYSTEM 文件路径
-                entity_pattern = re.compile(r'<!ENTITY\s+\w+\s+SYSTEM\s+"([^"]+)"')
-                entity_matches = entity_pattern.findall(xml_data)
+                # 修复XXE：使用安全解析方式，禁止DTD实体扩展
+                import xml.etree.ElementTree as ET
 
-                if entity_matches:
-                    # 读取文件并替换实体引用
-                    for filepath in entity_matches:
-                        try:
-                            # 处理 file:// 协议，去掉前缀
-                            actual_path = re.sub(r'^file://', '', filepath)
-                            with open(actual_path, "r", encoding="utf-8") as f:
-                                file_content = f.read().strip()
-                            # 替换 &实体名; 引用为文件内容
-                            xml_data = re.sub(r'&[^;]+;', file_content, xml_data)
-                        except Exception as e:
-                            error = f"读取文件失败: {filepath} - {str(e)}"
-                            break
+                # 禁用DTD加载外部实体（防XXE）
+                parser = ET.XMLParser()
+                # ElementTree没有直接禁用DTD的选项，所以拦截前处理
+                # 移除DTD声明和实体引用
+                safe_xml = re.sub(r'<!DOCTYPE[^>]*>', '', xml_data)
+                safe_xml = re.sub(r'&[^;\s]+;', '', safe_xml)
 
-                if not error:
-                    # 解析替换后的 XML，提取 user 节点的 name 和 email
-                    import xml.etree.ElementTree as ET
-                    try:
-                        root = ET.fromstring(xml_data)
-                        users = []
-                        for user in root.findall(".//user"):
-                            name = user.findtext("name", "")
-                            email = user.findtext("email", "")
-                            users.append({"name": name, "email": email})
-                        result = {"users": users, "total": len(users)}
-                    except ET.ParseError as e:
-                        error = f"XML 解析失败: {str(e)}"
+                root = ET.fromstring(safe_xml)
+                users = []
+                for user in root.findall(".//user"):
+                    name = user.findtext("name", "")
+                    email = user.findtext("email", "")
+                    users.append({"name": name, "email": email})
+                result = {"users": users, "total": len(users)}
+            except ET.ParseError as e:
+                error = f"XML 解析失败: {str(e)}"
             except Exception as e:
                 error = f"处理出错: {str(e)}"
         else:
