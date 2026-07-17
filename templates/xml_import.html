@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}NEXUS · XML 导入{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <div class="corner-bot-left"></div>
+        <h2 class="card-title">XML 数据导入</h2>
+        {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        {% if result %}
+            <div class="alert" style="background:rgba(0,240,255,0.08); color:#00f0ff; border:1px solid rgba(0,240,255,0.2);">
+                ✅ 解析成功，共 {{ result.total }} 条记录
+            </div>
+        {% endif %}
+        <form method="POST" action="/xml-import" class="form">
+            <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+            <div class="form-group">
+                <label for="xml_data">XML 数据</label>
+                <textarea id="xml_data" name="xml_data" class="form-input" rows="12" placeholder="粘贴 XML 数据..." style="resize:vertical;font-family:'JetBrains Mono',monospace;font-size:13px;">{{ request.form.get("xml_data", "") }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">◈ 导入</button>
+        </form>
+
+        {% if result %}
+            <div style="margin-top:20px;">
+                <pre style="background:rgba(0,0,0,0.3); color:#e0e0e0; padding:16px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.5; overflow-x:auto; border:1px solid rgba(0,240,255,0.1);">{{ result | tojson(indent=2) }}</pre>
+            </div>
+        {% endif %}
+
+        <div class="card-actions" style="margin-top:24px;">
+            <a href="/" class="btn btn-primary" style="background:transparent;border:1px solid rgba(0,240,255,0.3);">◈ 返回首页</a>
+        </div>
+        <div class="terminal-line">
+            <span class="blink">▌</span> XML PROCESSOR <span class="blink">▌</span>
+        </div>
+    </div>
+{% endblock %}

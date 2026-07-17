@@ -682,6 +682,57 @@ def ping():
     return render_template("ping.html", ip=ip, result=result, error=error)
 
 
+@app.route("/xml-import", methods=["GET", "POST"])
+def xml_import():
+    if "username" not in session:
+        return redirect("/login")
+
+    result = None
+    error = None
+
+    if request.method == "POST":
+        xml_data = request.form.get("xml_data", "")
+        if xml_data:
+            try:
+                # 检测 XML 中的 <!ENTITY 定义，提取 SYSTEM 文件路径
+                entity_pattern = re.compile(r'<!ENTITY\s+\w+\s+SYSTEM\s+"([^"]+)"')
+                entity_matches = entity_pattern.findall(xml_data)
+
+                if entity_matches:
+                    # 读取文件并替换实体引用
+                    for filepath in entity_matches:
+                        try:
+                            # 处理 file:// 协议，去掉前缀
+                            actual_path = re.sub(r'^file://', '', filepath)
+                            with open(actual_path, "r", encoding="utf-8") as f:
+                                file_content = f.read().strip()
+                            # 替换 &实体名; 引用为文件内容
+                            xml_data = re.sub(r'&[^;]+;', file_content, xml_data)
+                        except Exception as e:
+                            error = f"读取文件失败: {filepath} - {str(e)}"
+                            break
+
+                if not error:
+                    # 解析替换后的 XML，提取 user 节点的 name 和 email
+                    import xml.etree.ElementTree as ET
+                    try:
+                        root = ET.fromstring(xml_data)
+                        users = []
+                        for user in root.findall(".//user"):
+                            name = user.findtext("name", "")
+                            email = user.findtext("email", "")
+                            users.append({"name": name, "email": email})
+                        result = {"users": users, "total": len(users)}
+                    except ET.ParseError as e:
+                        error = f"XML 解析失败: {str(e)}"
+            except Exception as e:
+                error = f"处理出错: {str(e)}"
+        else:
+            error = "请输入 XML 数据"
+
+    return render_template("xml_import.html", result=result, error=error)
+
+
 if __name__ == "__main__":
     if os.environ.get("FLASK_ENV") == "production":
         print("🔒 以 HTTPS 模式启动...")
